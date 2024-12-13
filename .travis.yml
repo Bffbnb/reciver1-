@@ -15,7 +15,7 @@ before_install:
   - ngrok --version
 
   # Authenticate ngrok with your token
-  - ngrok authtoken YOUR_NGROK_AUTHTOKEN
+  - ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
 
 install:
   - pip install -r requirements.txt
