@@ -3,28 +3,38 @@ language: python
 python:
   - "3.8"
 
-# Install dependencies and ngrok
+services:
+  - docker
+
 before_install:
-  - echo "Installing ngrok"
+  - echo "Installing dependencies and ngrok"
   - pip install python-dotenv
   - wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
   - unzip ngrok-stable-linux-amd64.zip
   - sudo mv ngrok /usr/local/bin/
   - ngrok --version
 
-  - echo "Setting up ngrok authentication"
-  - ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
+  # Authenticate ngrok with your token
+  - ngrok authtoken YOUR_NGROK_AUTHTOKEN
 
 install:
   - pip install -r requirements.txt
 
 script:
+  # Start FastAPI application
   - uvicorn receiver:app --reload --host 0.0.0.0 --port 8000 &
-  - sleep 10
+  - echo "Waiting for FastAPI to start..."
+  - sleep 15  # Wait longer to ensure FastAPI initializes
+
+  # Start ngrok to expose port 8000
   - ./ngrok http 8000 &
-  - sleep 10
+  - echo "Waiting for ngrok to establish connection..."
+  - sleep 20  # Wait longer to ensure ngrok is running and tunnels are ready
+
+  # Retrieve ngrok public URL
   - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+  - echo "Ngrok URL: $RECEIVER_NGROK_URL"
 
 after_success:
-  - echo "Ngrok URL: $RECEIVER_NGROK_URL"
+  - echo "Sending request to ngrok URL"
   - curl $RECEIVER_NGROK_URL/attack
