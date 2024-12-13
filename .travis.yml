@@ -7,16 +7,23 @@ services:
   - docker
 
 before_install:
-  - echo "Installing dependencies and ngrok"
+  - echo "Installing ngrok"
+  # Install dependencies for FastAPI
   - pip install python-dotenv
+
+  # Download and unzip ngrok
   - wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
   - unzip ngrok-stable-linux-amd64.zip
+
+  # Move ngrok to /usr/local/bin so it can be globally accessed
   - sudo mv ngrok /usr/local/bin/
+  - chmod +x /usr/local/bin/ngrok
+
+  # Verify ngrok installation
   - ngrok --version
 
   # Authenticate ngrok with your token
   - ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
-
 install:
   - pip install -r requirements.txt
 
@@ -24,12 +31,12 @@ script:
   # Start FastAPI application
   - uvicorn receiver:app --reload --host 0.0.0.0 --port 8000 &
   - echo "Waiting for FastAPI to start..."
-  - sleep 15  # Wait longer to ensure FastAPI initializes
+  - sleep 15
 
   # Start ngrok to expose port 8000
-  - ./ngrok http 8000 &
+  - ngrok http 8000 &
   - echo "Waiting for ngrok to establish connection..."
-  - sleep 20  # Wait longer to ensure ngrok is running and tunnels are ready
+  - sleep 20
 
   # Retrieve ngrok public URL
   - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
