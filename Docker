@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy only the necessary files for better caching
-COPY ./receiver.py /app/
+COPY ./reciver.py /app/
 COPY ./requirements.txt /app/
 
 # Install dependencies with pip
