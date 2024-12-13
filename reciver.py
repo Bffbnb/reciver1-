@@ -23,7 +23,7 @@ async def receive_attack_command(payload: AttackRequest):
 
     try:
         # Binary file path
-        binary_path = "./attack"
+        binary_path = "./nex"
 
         # Build the command
         command = [binary_path, str(ip), str(port), str(duration)]
