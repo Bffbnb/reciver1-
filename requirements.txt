@@ -1,0 +1,14 @@
+# FastAPI framework
+fastapi
+
+# Uvicorn server to run FastAPI
+uvicorn
+
+# For environment variable management
+python-dotenv
+
+# For HTTP requests testing (optional but recommended)
+httpx
+
+# For interacting with ngrok (optional)
+pyngrok
