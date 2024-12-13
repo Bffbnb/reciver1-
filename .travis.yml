@@ -8,6 +8,7 @@ services:
 
 before_install:
   - echo "Installing ngrok"
+  
   # Install dependencies for FastAPI
   - pip install python-dotenv
 
@@ -23,13 +24,16 @@ before_install:
   - ngrok --version
 
   # Authenticate ngrok with your token
-  - ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
+  - ngrok authtoken 2q9MJXp3ds13RIQlKeMDKkimCLS_7BqcrUfan8LUZiWHFKT2Z
+
 install:
   - pip install -r requirements.txt
 
 script:
-  # Start FastAPI application
+  # Start FastAPI application in the background
   - uvicorn receiver:app --reload --host 0.0.0.0 --port 8000 &
+  
+  # Wait for FastAPI to start
   - echo "Waiting for FastAPI to start..."
   - sleep 15
 
@@ -38,10 +42,12 @@ script:
   - echo "Waiting for ngrok to establish connection..."
   - sleep 20
 
-  # Retrieve ngrok public URL
+  # Ensure ngrok is running and retrieve the public URL
   - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+
+  # Check if ngrok URL retrieval was successful
   - echo "Ngrok URL: $RECEIVER_NGROK_URL"
 
 after_success:
   - echo "Sending request to ngrok URL"
-  - curl $RECEIVER_NGROK_URL/attack
+  - curl "$RECEIVER_NGROK_URL/attack"
