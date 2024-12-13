@@ -1,0 +1,28 @@
+language: python
+
+python:
+  - "3.8"
+
+services:
+  - docker
+
+before_install:
+  - echo "Installing dependencies..."
+  - pip install docker-compose
+  - echo "Setting up ngrok authtoken"
+  - ./ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
+
+install:
+  - pip install -r requirements.txt
+
+script:
+  - echo "Building and running the receiver instance"
+  - docker build -t attack-receiver .
+  - docker run -d -p 8000:8000 attack-receiver
+
+  - ./ngrok http 8000 &
+  - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+
+after_success:
+  - echo "Ngrok URL for this account: $RECEIVER_NGROK_URL"
+  - curl $RECEIVER_NGROK_URL/attack
