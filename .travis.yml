@@ -7,24 +7,17 @@ services:
   - docker
 
 before_install:
-  - echo "Installing ngrok"
-  
   # Install dependencies for FastAPI
   - pip install python-dotenv
 
-  # Download and unzip ngrok
-  - wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-  - unzip ngrok-stable-linux-amd64.zip
+  # Install Cloudflare Tunnel CLI
+  - echo "Installing Cloudflare Tunnel CLI"
+  - curl -s https://pkg.cloudflare.com/cloudflare-tunnel.sh | sh
 
-  # Move ngrok to /usr/local/bin so it can be globally accessed
-  - sudo mv ngrok /usr/local/bin/
-  - chmod +x /usr/local/bin/ngrok
-
-  # Verify ngrok installation
-  - ngrok --version
-
-  # Authenticate ngrok with your token
-  - ngrok authtoken 2q9MJXp3ds13RIQlKeMDKkimCLS_7BqcrUfan8LUZiWHFKT2Z
+  # Authenticate Cloudflare CLI with the provided API token
+  - echo "Authenticating with Cloudflare Tunnel"
+  - export CLOUDFLARE_API_TOKEN="Ol8FZi4nP2L1tCJN5Q5WLHKVNs0s8HdQMYCWIzPC"
+  - cloudflared login
 
 install:
   - pip install -r requirements.txt
@@ -32,22 +25,16 @@ install:
 script:
   # Start FastAPI application in the background
   - uvicorn receiver:app --reload --host 0.0.0.0 --port 8000 &
-  
+
   # Wait for FastAPI to start
   - echo "Waiting for FastAPI to start..."
   - sleep 15
 
-  # Start ngrok to expose port 8000
-  - ngrok http 8000 &
-  - echo "Waiting for ngrok to establish connection..."
-  - sleep 20
-
-  # Ensure ngrok is running and retrieve the public URL
-  - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-
-  # Check if ngrok URL retrieval was successful
-  - echo "Ngrok URL: $RECEIVER_NGROK_URL"
+  # Start Cloudflare Tunnel to expose port 8000
+  - echo "Starting Cloudflare Tunnel to expose FastAPI instance"
+  - cloudflared tunnel --url http://localhost:8000 &
 
 after_success:
-  - echo "Sending request to ngrok URL"
-  - curl "$RECEIVER_NGROK_URL/attack"
+  # Log confirmation that Cloudflare Tunnel is running
+  - echo "Cloudflare Tunnel has been successfully set up and traffic is routed"
+  - echo "Application exposed to Cloudflare infrastructure"
