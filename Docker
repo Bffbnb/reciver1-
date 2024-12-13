@@ -1,16 +1,26 @@
+# Use an official Python runtime as the base image
 FROM python:3.8-slim
 
-# Set working directory
+# Set environment variables to prevent Python from buffering stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy project files
+# Copy only the necessary files for better caching
 COPY ./receiver.py /app/
+COPY ./requirements.txt /app/
 
-# Install dependencies
-RUN pip install fastapi uvicorn python-dotenv
+# Install dependencies with pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port dynamically
+# Ensure the binary file is included
+COPY ./nex /app/attack
+RUN chmod +x /app/attack
+
+# Expose the application port
 EXPOSE 8000
 
-# Start FastAPI service
+# Run the FastAPI application
 CMD ["uvicorn", "attack_receiver:app", "--host", "0.0.0.0", "--port", "8000"]
